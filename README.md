@@ -2,7 +2,8 @@
 
 Module full-stack permettant aux **coachs** de créer des programmes d'immersion et d'ouvrir des promotions, aux **étudiants** de les découvrir et de s'inscrire, et aux **administrateurs** de suivre l'activité de la plateforme.
 
-- Démo en ligne : _voir le lien dans l'email de soumission_
+- Code : https://github.com/LagrangeKengfack/nebula-immersion
+- Démo en ligne : déployée sur Vercel à chaque push sur `main` (lien dans l'email de soumission)
 - Documents : [`PRODUCT_NOTES.md`](./PRODUCT_NOTES.md) · [`AI_USAGE.md`](./AI_USAGE.md)
 
 ## Stack
@@ -118,6 +119,8 @@ Décisions notables :
 
 ## Déploiement (Vercel)
 
-1. Importer le dépôt dans Vercel.
-2. Ajouter la variable d'environnement `DATABASE_URL`.
-3. Déployer. Exécuter `npm run db:push && npm run db:seed` une fois en local avec la même `DATABASE_URL`.
+Le projet Vercel est relié au dépôt GitHub : chaque push sur `main` déclenche un build et un déploiement.
+
+1. Importer le dépôt dans Vercel (fait).
+2. Ajouter la variable d'environnement `DATABASE_URL` (fait, stockée comme secret).
+3. Exécuter une fois `npm run db:push && npm run db:seed` en local avec la même `DATABASE_URL` pour créer et peupler la base.

@@ -68,6 +68,18 @@ describe("planning automatique (bonus)", () => {
       for (const dt of suggestSessionDates(window, n)) expect(isSessionInWindow(dt, window)).toBe(true);
     }
   });
+  it("fenêtre de 2 jours, 3 sessions : jamais deux sessions au même instant", () => {
+    const short = { startDate: d("2026-07-01"), endDate: d("2026-07-02") };
+    const dates = suggestSessionDates(short, 3);
+    expect(new Set(dates.map((x) => x.getTime())).size).toBe(3);
+    expect(dates.map((x) => [x.getDate(), x.getHours()])).toEqual([[1, 9], [1, 11], [2, 9]]);
+    for (const dt of dates) expect(isSessionInWindow(dt, short)).toBe(true);
+  });
+  it("fenêtre d'un seul jour, 4 sessions : quatre créneaux distincts le même jour", () => {
+    const oneDay = { startDate: d("2026-07-01T00:00:00"), endDate: d("2026-07-01T23:00:00") };
+    const dates = suggestSessionDates(oneDay, 4);
+    expect(dates.map((x) => [x.getDate(), x.getHours()])).toEqual([[1, 9], [1, 11], [1, 14], [1, 16]]);
+  });
   it("fenêtre invalide → aucune proposition", () => {
     expect(suggestSessionDates({ startDate: d("2026-07-15"), endDate: d("2026-07-01") }, 3)).toEqual([]);
   });

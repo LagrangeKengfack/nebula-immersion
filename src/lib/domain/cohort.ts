@@ -48,9 +48,14 @@ export function canEnroll(status: EffectiveCohortStatus, alreadyEnrolled: boolea
 
 /**
  * Bonus du sujet : propose des dates de sessions réparties uniformément sur la durée de la cohorte.
- * Première session le jour de début, dernière le jour de fin, les autres équidistantes.
- * L'heure est fixée à 18h00 par défaut (créneau étudiant classique), à ajuster par le coach.
+ * - Fenêtre assez longue (au moins autant de jours que de sessions) : une session par jour,
+ *   première le jour de début, dernière le jour de fin, les autres équidistantes, à 18h00.
+ * - Fenêtre courte (moins de jours que de sessions) : plusieurs sessions le même jour,
+ *   sur des créneaux distincts (9h, 11h, 14h, 16h) pour qu'aucune ne chevauche une autre.
+ * Le coach ajuste ensuite titres et horaires.
  */
+export const SAME_DAY_SLOTS_HOURS = [9, 11, 14, 16];
+
 export function suggestSessionDates(window: CohortWindow, sessionCount: number, hour = 18): Date[] {
   if (!isValidWindow(window) || sessionCount < 1) return [];
   const start = startOfDay(window.startDate).getTime();
@@ -58,6 +63,21 @@ export function suggestSessionDates(window: CohortWindow, sessionCount: number, 
   if (sessionCount === 1) return [withHour(new Date(start), hour)];
   const DAY = 86_400_000;
   const totalDays = Math.round((end - start) / DAY);
+  const dayCount = totalDays + 1;
+
+  if (sessionCount > dayCount) {
+    // Fenêtre courte : on répartit les sessions sur les jours disponibles, puis sur des créneaux horaires distincts
+    const perDay = new Map<number, number>();
+    return Array.from({ length: sessionCount }, (_, i) => {
+      const dayIndex = Math.floor((i * dayCount) / sessionCount);
+      const slot = perDay.get(dayIndex) ?? 0;
+      perDay.set(dayIndex, slot + 1);
+      const d = new Date(start);
+      d.setDate(d.getDate() + dayIndex);
+      return withHour(d, SAME_DAY_SLOTS_HOURS[slot] ?? SAME_DAY_SLOTS_HOURS.at(-1)!);
+    });
+  }
+
   const stepDays = totalDays / (sessionCount - 1);
   return Array.from({ length: sessionCount }, (_, i) => {
     const d = new Date(start);

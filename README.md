@@ -15,7 +15,7 @@ Module full-stack permettant aux **coachs** de créer des programmes d'immersion
 | Base de données | PostgreSQL hébergé sur Neon | Postgres partout (dev et prod), pilote HTTP adapté au serverless Vercel |
 | ORM | Drizzle | Schéma TypeScript lisible, requêtes typées, aucune dépendance binaire |
 | Validation | Zod | Un schéma par formulaire, erreurs par champ renvoyées au client |
-| Tests | Runner natif de Node 22 (`node --test`) | Zéro dépendance ; teste les règles métier en fonctions pures |
+| Tests | Vitest | Rapide, API familière ; teste les règles métier en fonctions pures |
 
 ## Lancer le projet
 
@@ -86,7 +86,7 @@ src/
     ├── auth.ts              Simulateur de rôle + requireRole()
     ├── labels.ts            Libellés FR des enums
     └── format.ts            Dates
-tests/                       node --test
+tests/                       Vitest
 ```
 
 ## Modèle de données

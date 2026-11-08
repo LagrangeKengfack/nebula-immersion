@@ -23,7 +23,7 @@
 
 Trois cas concrets, par ordre de gravité :
 
-1. **Une stack inadaptée à mon environnement.** La première proposition était Prisma + Vitest + SQLite en local. Trois problèmes : SQLite est inutilisable sur Vercel (pas de disque persistant), Prisma télécharge des binaires de plusieurs dizaines de Mo hors de npm, et Vitest tirait une cascade de dépendances optionnelles (Playwright…). Sur une connexion à 40 Ko/s, l'installation a échoué deux fois. Nous avons basculé sur Drizzle (ORM pur TypeScript), Postgres partout via Neon, et le runner de tests natif de Node 22. Le modèle de données validé n'a pas changé, seule la syntaxe de l'outil.
+1. **Une stack inadaptée à mon environnement.** La première proposition était Prisma + Vitest + SQLite en local. Trois problèmes : SQLite est inutilisable sur Vercel (pas de disque persistant), Prisma télécharge des binaires de plusieurs dizaines de Mo hors de npm, et Vitest tirait une cascade de dépendances optionnelles (Playwright…). Sur une connexion à 40 Ko/s, l'installation a échoué deux fois. Nous avons basculé sur Drizzle (ORM pur TypeScript), Postgres partout via Neon, et, dans un premier temps, le runner de tests natif de Node 22 (Vitest a été réinstallé avec succès une fois le réseau rétabli). Le modèle de données validé n'a pas changé, seule la syntaxe de l'outil.
 
 2. **Un bug d'arrondi dans le planning automatique.** La première version de `suggestSessionDates` répartissait les sessions en millisecondes puis prenait la date calendaire, ce qui donnait 1, 5, 10, 15 juillet au lieu de 1, 6, 10, 15 pour quatre sessions sur quatorze jours. C'est le test unitaire, écrit avant la correction, qui l'a révélé. L'arrondi se fait maintenant en jours entiers.
 

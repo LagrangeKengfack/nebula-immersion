@@ -1,9 +1,4 @@
-import { describe, it } from "node:test";
-import assert from "node:assert/strict";
-const expect = (v: unknown) => ({
-  toBe: (e: unknown) => assert.equal(v, e),
-  toEqual: (e: unknown) => assert.deepEqual(v, e),
-});
+import { describe, expect, it } from "vitest";
 import {
   canEnroll,
   effectiveStatus,
@@ -11,7 +6,7 @@ import {
   isValidCapacity,
   isValidWindow,
   suggestSessionDates,
-} from "../src/lib/domain/cohort.ts";
+} from "@/lib/domain/cohort";
 
 const d = (s: string) => new Date(s);
 const window = { startDate: d("2026-07-01"), endDate: d("2026-07-15") };

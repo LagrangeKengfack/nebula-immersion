@@ -2,15 +2,14 @@
 
 Module full-stack permettant aux **coachs** de créer des programmes d'immersion et d'ouvrir des promotions, aux **étudiants** de les découvrir et de s'inscrire, et aux **administrateurs** de suivre l'activité de la plateforme.
 
-- Code : https://github.com/LagrangeKengfack/nebula-immersion
-- Démo en ligne : déployée sur Vercel à chaque push sur `main` (lien dans l'email de soumission)
+- Démo en ligne : https://nebula-omega-six.vercel.app
 - Documents : [`PRODUCT_NOTES.md`](./PRODUCT_NOTES.md) · [`AI_USAGE.md`](./AI_USAGE.md)
 
 ## Stack
 
 | Couche | Choix | Pourquoi |
 |---|---|---|
-| Framework | Next.js 16 (App Router, React 19, TypeScript) | Pages serveur + server actions : pas d'API REST à maintenir pour un module de cette taille |
+| Framework | Next.js 16 (App Router, React 19, TypeScript) | Pages serveur + server actions |
 | Styles | Tailwind CSS 4 | Composants réutilisables, un seul thème cohérent |
 | Base de données | PostgreSQL hébergé sur Neon | Postgres partout (dev et prod), pilote HTTP adapté au serverless Vercel |
 | ORM | Drizzle | Schéma TypeScript lisible, requêtes typées, aucune dépendance binaire |
@@ -42,7 +41,7 @@ npm run dev
 
 ### Comptes de démonstration
 
-L'authentification est simulée (choix autorisé par le sujet) : le sélecteur **« Connecté en tant que »** en haut de page bascule d'un utilisateur de démo à l'autre. L'identité est stockée dans un cookie `httpOnly` et **chaque action serveur re-vérifie le rôle** : remplacer `src/lib/auth.ts` par NextAuth ou Clerk ne changerait rien au reste du code.
+L'authentification est simulée (choix autorisé par le sujet) : le sélecteur **« Connecté en tant que »** en haut de page bascule d'un utilisateur de démo à l'autre. L'identité est stockée dans un cookie `httpOnly` et **chaque action serveur re-vérifie le rôle**.
 
 | Rôle | Compte | À tester |
 |---|---|---|
@@ -101,14 +100,6 @@ User (role: STUDENT | COACH | ADMIN)
       └─< Exploration (programme entier, ou liée à une Session précise)
 ```
 
-Décisions notables :
-
-- **« Complet » est calculé**, jamais stocké (`inscrits ≥ capacité`). Le coach ne gère que Ouvert / Fermé. Aucun risque de désynchronisation.
-- **Deux capacités reliées** : `program.maxCapacity` est le plafond, chaque cohorte choisit en dessous.
-- **Les sessions sont créées avec la cohorte**, pré-datées par répartition uniforme (bonus du sujet), pour garantir l'invariant « autant de sessions que le programme ». Le coach ajuste ensuite titres et horaires.
-- **Invariants en base** : unicité `(student, cohort)`, unicité `(cohort, order)`, cascades.
-- **Inscription anti-course** : l'insertion re-vérifie la capacité dans la requête SQL elle-même, pour que deux étudiants simultanés ne dépassent pas la dernière place.
-
 ## Règles métier implémentées
 
 - Seuls les programmes **publiés** sont visibles des étudiants (catalogue, détail, inscription).
@@ -120,8 +111,33 @@ Décisions notables :
 
 ## Déploiement (Vercel)
 
-Le projet Vercel est relié au dépôt GitHub : chaque push sur `main` déclenche un build et un déploiement.
+L'application tourne entièrement sur Vercel : les pages et les server actions s'exécutent dans des fonctions serverless, la base de données reste hébergée sur Neon. Aucun serveur à administrer.
 
-1. Importer le dépôt dans Vercel (fait).
-2. Ajouter la variable d'environnement `DATABASE_URL` (fait, stockée comme secret).
-3. Exécuter une fois `npm run db:push && npm run db:seed` en local avec la même `DATABASE_URL` pour créer et peupler la base.
+**Mise en place (faite une fois)**
+
+1. Créer un projet Postgres sur [Neon](https://neon.tech) et copier la chaîne de connexion « pooled ».
+2. Importer le dépôt GitHub dans Vercel (`vercel link` ou depuis le tableau de bord Vercel). Vercel détecte Next.js et configure le build (`npm install`, `npm run build`) sans fichier de configuration.
+3. Dans Vercel → *Settings → Environment Variables*, ajouter `DATABASE_URL` avec la chaîne Neon, pour les environnements Production et Preview. La valeur est stockée chiffrée et n'apparaît jamais dans le dépôt.
+4. Créer les tables et charger la démo depuis un poste de développement, avec la même `DATABASE_URL` dans `.env` :
+   ```bash
+   npm run db:push
+   npm run db:seed
+   ```
+
+**Au quotidien**
+
+- Chaque `git push` sur `main` déclenche un build et, s'il réussit, remplace la version en production. Le déploiement précédent reste disponible pour un retour arrière instantané depuis le tableau de bord Vercel.
+- Chaque push sur une autre branche produit une URL de prévisualisation isolée, utile pour relire une fonctionnalité avant de la fusionner.
+- Un build qui échoue (typage, lint, dépendances) n'est jamais mis en ligne : la version précédente continue de servir.
+
+**Vérifier un déploiement**
+
+```bash
+scripts/smoke.sh https://nebula-omega-six.vercel.app   # chaque page, avec chaque rôle
+vercel logs nebula-omega-six.vercel.app                  # journaux d'exécution récents
+```
+
+**Points d'attention**
+
+- Le plan gratuit de Neon met la base en veille après inactivité : la première requête après une pause peut prendre une à deux secondes.
+- Vercel installe les dépendances en mode strict (`npm install` sans option) : une installation locale réalisée avec `--legacy-peer-deps` peut masquer un conflit de versions qui fera échouer le build en ligne.

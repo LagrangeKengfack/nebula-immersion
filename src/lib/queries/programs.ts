@@ -1,7 +1,7 @@
 import "server-only";
 import { and, asc, count, desc, eq, gte, ilike, or, sql } from "drizzle-orm";
 import { db } from "@/db";
-import { cohorts, enrollments, programs, sessions, users } from "@/db/schema";
+import { cohorts, enrollments, explorations, programs, sessions, users } from "@/db/schema";
 import { effectiveStatus } from "@/lib/domain/cohort";
 
 export type ProgramFilters = { q?: string; domain?: string };
@@ -27,7 +27,7 @@ export async function listPublishedPrograms(filters: ProgramFilters = {}) {
       coachName: users.name,
       openCohorts: sql<number>`(
         select count(*)::int from ${cohorts} c
-        where c.program_id = ${programs.id} and c.status = 'OPEN' and c.end_date >= now()
+        where c.program_id = ${programs}.id and c.status = 'OPEN' and c.end_date >= now()
       )`,
     })
     .from(programs)
@@ -108,8 +108,10 @@ export async function listCoachPrograms(coachId: string) {
       status: programs.status,
       sessionCount: programs.sessionCount,
       updatedAt: programs.updatedAt,
-      cohortCount: sql<number>`(select count(*)::int from ${cohorts} c where c.program_id = ${programs.id})`,
-      enrollmentCount: sql<number>`(select count(*)::int from ${enrollments} e join ${cohorts} c on c.id = e.cohort_id where c.program_id = ${programs.id})`,
+      // NB : on écrit ${programs}.id et non ${programs.id} — sans jointure, Drizzle rend ce dernier en "id" nu,
+      // ambigu avec c.id dans la sous-requête (erreur Postgres 42702 constatée en production).
+      cohortCount: sql<number>`(select count(*)::int from ${cohorts} c where c.program_id = ${programs}.id)`,
+      enrollmentCount: sql<number>`(select count(*)::int from ${enrollments} e join ${cohorts} c on c.id = e.cohort_id where c.program_id = ${programs}.id)`,
     })
     .from(programs)
     .where(eq(programs.coachId, coachId))
@@ -125,7 +127,7 @@ export async function getCoachProgram(programId: string, coachId: string) {
         orderBy: desc(cohorts.startDate),
         with: { sessions: { orderBy: asc(sessions.order) }, enrollments: { columns: { id: true } } },
       },
-      explorations: { orderBy: desc(programs.createdAt), with: { session: { columns: { order: true, title: true } } } },
+      explorations: { orderBy: desc(explorations.createdAt), with: { session: { columns: { order: true, title: true } } } },
     },
   });
   if (!program) return null;

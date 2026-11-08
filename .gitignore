@@ -40,3 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 !.env.example
+
+# généré par next dev à chaque démarrage, inutile dans le dépôt
+AGENTS.md

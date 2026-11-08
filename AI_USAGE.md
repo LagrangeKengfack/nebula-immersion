@@ -29,6 +29,8 @@ Trois cas concrets, par ordre de gravité :
 
 3. **Une configuration par défaut qui aurait coûté une heure.** Le squelette Next.js 16 activait `cacheComponents`, qui exige une frontière `<Suspense>` autour de tout accès à un cookie ou à la base, sous peine d'erreur de build. Pour une application entièrement dynamique, c'était une contrainte sans bénéfice ; nous l'avons désactivé après lecture de la documentation embarquée dans le paquet.
 
+4. **Un faux positif dans la vérification de l'IA elle-même.** Le premier test de fumée écrit par l'IA vérifiait seulement le code HTTP et l'absence du texte « Une erreur est survenue » dans le HTML. Or Next.js rend la page d'erreur côté client : le HTML servi contient le squelette de chargement et l'erreur sérialisée, mais pas ce texte. Résultat : la page « Mes programmes » du coach était cassée en production (colonne `id` ambiguë dans une sous-requête SQL générée par Drizzle) alors que le test disait « tout va bien ». C'est en testant la démo déployée dans un navigateur que je l'ai vu, et les logs Vercel ont donné la cause. Le test a été réécrit (`scripts/smoke.sh`) : il exige désormais un texte propre à chaque page et détecte l'erreur sérialisée dans le flux React.
+
 Deux erreurs plus petites, attrapées par l'outillage : un appel à `Date.now()` pendant le rendu (interdit par les règles de pureté React, signalé par ESLint) et des pages de l'espace coach qui levaient une exception en parallèle du layout qui affichait déjà le refus d'accès (visible dans les logs serveur).
 
 ## 5. Comment j'ai revu et validé le code final
@@ -37,7 +39,8 @@ Deux erreurs plus petites, attrapées par l'outillage : un appel à `Date.now()`
 - **Lint** : ESLint avec les règles Next et React (dont les règles de pureté des hooks), sans erreur.
 - **Tests** : 18 tests sur les règles métier (`npm test`), tous verts.
 - **Build de production** : `next build` sans avertissement, dix routes.
-- **Test de chaque route avec chaque rôle** : un script a appelé toutes les pages avec un cookie visiteur, étudiant, coach et admin, et vérifié le code HTTP, le titre rendu et l'absence de message d'erreur. Les refus d'accès, la page 404 et l'accès d'un coach au programme d'un autre coach ont été testés.
+- **Test de chaque route avec chaque rôle** (`scripts/smoke.sh`) : appelle toutes les pages avec un cookie visiteur, étudiant, coach et admin, vérifie le code HTTP, la présence d'un texte attendu propre à chaque page et l'absence d'erreur serveur sérialisée. Les refus d'accès, la page 404 et l'accès d'un coach au programme d'un autre coach sont couverts. Exécuté contre le déploiement Vercel, pas seulement en local.
+- **Test manuel dans le navigateur** de la démo déployée, avec chaque compte.
 - **Relecture ciblée** du code listé au § 6.
 
 ## 6. Les parties que j'ai vérifiées avec le plus de soin

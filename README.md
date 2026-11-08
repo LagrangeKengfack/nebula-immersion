@@ -62,6 +62,7 @@ La promotion « Exercices pratiques pour chefs de produit » est volontairement 
 | `npm run build` / `npm start` | Build et serveur de production |
 | `npm test` | Tests des règles métier (`tests/`) |
 | `npm run lint` | ESLint (règles Next + React) |
+| `scripts/smoke.sh [URL]` | Test de fumée : chaque page avec chaque rôle (local ou déployé) |
 | `npm run db:push` | Synchronise le schéma Drizzle avec la base |
 | `npm run db:seed` | Vide et recharge les données de démo |
 

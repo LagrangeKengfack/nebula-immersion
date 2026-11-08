@@ -2,7 +2,7 @@
 # Test de fumée : appelle chaque page avec chaque rôle et vérifie
 #  - le code HTTP,
 #  - la présence d'un texte attendu (preuve que la page a vraiment rendu),
-#  - l'absence d'erreur serveur sérialisée dans le flux React ("digest").
+#  - l'absence d'erreur serveur sérialisée dans le flux React (digest numérique ; le 404 volontaire a un digest textuel).
 # Usage : scripts/smoke.sh [BASE_URL]   (défaut http://localhost:3000)
 set -u
 BASE=${1:-http://localhost:3000}
@@ -24,7 +24,7 @@ check() { # label, url, cookie, texte attendu
   local code
   code=$(curl -sL -o "$TMP" -w "%{http_code}" --max-time 60 -H "Cookie: nebula_user=$3" "$BASE$2")
   local ok="OK "
-  if [[ "$code" != "200" && "$code" != "404" ]] || ! grep -q -- "$4" "$TMP" || grep -q 'E{\\"digest\\"' "$TMP"; then ok="KO "; fail=1; fi
+  if [[ "$code" != "200" && "$code" != "404" ]] || ! grep -q -- "$4" "$TMP" || grep -qE 'E\{\\"digest\\":\\"[0-9]' "$TMP"; then ok="KO "; fail=1; fi
   printf "%s %-30s %-48s HTTP %s  attendu « %s »\n" "$ok" "$1" "$2" "$code" "$4"
 }
 

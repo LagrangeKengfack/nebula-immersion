@@ -24,6 +24,7 @@ Le sujet le dit trois fois : une implémentation plus petite et cohérente vaut 
 
 - **Authentification réelle** (NextAuth ou Clerk) et invitation des coachs par l'admin.
 - **Explorations complètes** : réponse écrite de l'étudiant, commentaire du coach, statut « rendu / corrigé ».
+- **Documents joints aux explorations** : le coach attache des supports (PDF, liens, grilles d'analyse) que les étudiants téléchargent depuis « Mes programmes » pour préparer la session.
 - **Notifications** : email de confirmation d'inscription avec les dates au format calendrier, rappel la veille de chaque session.
 - **Gestion de la liste d'attente** quand une promotion est complète, avec promotion automatique en cas de désinscription.
 - **Observabilité** : journaliser les refus d'inscription (complet, fermé, doublon) .

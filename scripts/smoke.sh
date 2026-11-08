@@ -22,7 +22,7 @@ const sql = neon(process.env.DATABASE_URL);
 
 check() { # label, url, cookie, texte attendu
   local code
-  code=$(curl -s -o "$TMP" -w "%{http_code}" --max-time 60 -H "Cookie: nebula_user=$3" "$BASE$2")
+  code=$(curl -sL -o "$TMP" -w "%{http_code}" --max-time 60 -H "Cookie: nebula_user=$3" "$BASE$2")
   local ok="OK "
   if [[ "$code" != "200" && "$code" != "404" ]] || ! grep -q -- "$4" "$TMP" || grep -q 'E{\\"digest\\"' "$TMP"; then ok="KO "; fail=1; fi
   printf "%s %-30s %-48s HTTP %s  attendu « %s »\n" "$ok" "$1" "$2" "$code" "$4"

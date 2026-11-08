@@ -10,7 +10,9 @@ TMP=$(mktemp)
 fail=0
 
 # Identifiants de démo (lus dans la base pour ne pas dépendre d'ids figés)
-read -r ALICE SARAH MARC ADMIN IB DRAFT COH <<<"$(node --env-file=.env -e '
+ids=""
+for attempt in 1 2 3 4 5; do
+  ids=$(node --env-file=.env -e '
 const { neon } = require("@neondatabase/serverless");
 const sql = neon(process.env.DATABASE_URL);
 (async () => {
@@ -18,7 +20,12 @@ const sql = neon(process.env.DATABASE_URL);
   const p = Object.fromEntries((await sql`select status, min(id) as id from programs group by status`).map(r => [r.status, r.id]));
   const [c] = await sql`select c.id from cohorts c join programs p on p.id = c.program_id join users u on u.id = p.coach_id where u.email = ${"sarah@nebula.demo"} limit 1`;
   console.log([u["alice@nebula.demo"], u["sarah@nebula.demo"], u["marc@nebula.demo"], u["admin@nebula.demo"], p.PUBLISHED, p.DRAFT, c.id].join(" "));
-})();')"
+})().catch(() => process.exit(1));' 2>/dev/null) && break
+  echo "Lecture des identifiants de démo : tentative $attempt échouée (réseau ?), nouvel essai…" >&2
+  sleep 3
+done
+[[ -z "$ids" ]] && { echo "Impossible de lire les identifiants de démo dans la base. Abandon." >&2; exit 2; }
+read -r ALICE SARAH MARC ADMIN IB DRAFT COH <<<"$ids"
 
 check() { # label, url, cookie, texte attendu
   local code

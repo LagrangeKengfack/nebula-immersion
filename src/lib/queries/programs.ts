@@ -208,3 +208,67 @@ export async function getAdminDashboard() {
     latestEnrollments: latest,
   };
 }
+
+/** Page d'accueil : chiffres clés, programmes à la une, domaines, coachs et prochaine promotion ouverte. */
+export async function getLandingData() {
+  const now = new Date();
+  const [[published], [coachTotal], [openCohorts], [enrollmentTotal], allPrograms, domainRows, coachRows, upcoming] = await Promise.all([
+    db.select({ n: count() }).from(programs).where(eq(programs.status, "PUBLISHED")),
+    db.select({ n: count() }).from(users).where(eq(users.role, "COACH")),
+    db.select({ n: count() }).from(cohorts).where(and(gte(cohorts.endDate, now), eq(cohorts.status, "OPEN"))),
+    db.select({ n: count() }).from(enrollments),
+    listPublishedPrograms(),
+    db
+      .select({ domain: programs.domain, n: count() })
+      .from(programs)
+      .where(eq(programs.status, "PUBLISHED"))
+      .groupBy(programs.domain)
+      .orderBy(desc(count())),
+    db
+      .select({
+        id: users.id,
+        name: users.name,
+        headline: users.headline,
+        programCount: sql<number>`(select count(*)::int from ${programs} p where p.coach_id = ${users}.id and p.status = 'PUBLISHED')`,
+      })
+      .from(users)
+      .where(eq(users.role, "COACH"))
+      .orderBy(asc(users.name)),
+    db.query.cohorts.findMany({
+      where: and(eq(cohorts.status, "OPEN"), gte(cohorts.endDate, now)),
+      orderBy: asc(cohorts.startDate),
+      limit: 6,
+      with: {
+        program: { with: { coach: { columns: { name: true, headline: true } } } },
+        enrollments: { columns: { id: true } },
+        sessions: { columns: { startsAt: true }, orderBy: asc(sessions.order) },
+      },
+    }),
+  ]);
+
+  // Prochaine promotion mise en avant : programme publié, et il reste des places
+  const next = upcoming.find((c) => c.program.status === "PUBLISHED" && c.enrollments.length < c.capacity) ?? null;
+
+  // À la une : d'abord celles qui ont une promotion ouverte, puis les plus récentes
+  const featured = [...allPrograms].sort((a, b) => Number(b.openCohorts > 0) - Number(a.openCohorts > 0)).slice(0, 3);
+
+  return {
+    stats: { publishedPrograms: published.n, coaches: coachTotal.n, openCohorts: openCohorts.n, enrollments: enrollmentTotal.n },
+    featured,
+    domains: domainRows,
+    coaches: coachRows.filter((c) => c.programCount > 0),
+    nextCohort: next && {
+      id: next.id,
+      programId: next.programId,
+      programTitle: next.program.title,
+      domain: next.program.domain,
+      coachName: next.program.coach.name,
+      startDate: next.startDate,
+      endDate: next.endDate,
+      capacity: next.capacity,
+      enrolledCount: next.enrollments.length,
+      sessionCount: next.sessions.length,
+      firstSessionAt: next.sessions[0]?.startsAt ?? null,
+    },
+  };
+}
